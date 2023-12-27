@@ -40,7 +40,7 @@ contract TripManager{
     uint256 _endDate, uint256 _price) external
     {
         //Checking that the address is not already registered as a customer
-        require(isCustomer[msg.sender] == false,"User is registered as a customer, cannot book trips");
+        require(isCustomer[msg.sender] == false,"User is registered as a customer, cannot add trips");
         TripLib.Trip memory trip = TripLib.createTrip(
             _name,
             _location,
@@ -73,6 +73,7 @@ contract TripManager{
     function closeTrip(uint256 _tripIndex, uint256 _currentDate) external onlyProvider tripExist(_tripIndex) payable{
         TripLib.Trip storage trip = trips[_tripIndex];
         require(trip.isBooked, "The trip has not been booked yet");
+        require(msg.sender == trip.addressProvider, "Only the provider of the trip can close it");
         require(_currentDate >= trip.endDate, "The trip is not yet over");
 
         customerBalance[bookingCustomer[_tripIndex]] -= trip.price;
@@ -92,7 +93,9 @@ contract TripManager{
 
     function withdrawBalanceProvider() external onlyProvider{
         require(providerBalance[msg.sender] > 0, "insufficient balance");
+
         uint256 amount = providerBalance[msg.sender];
+        providerBalance[msg.sender] = 0;
         payable(msg.sender).transfer(amount);  
         emit Withdrawal(msg.sender, amount); 
     }
